@@ -512,7 +512,7 @@ function setProg(id,f){ $(id).style.strokeDashoffset = circ(id)*(1-Math.max(0,Ma
 })();
 function setHand(f){ const a=f*2*Math.PI-Math.PI/2, r=40; const h=$('sHand'); h.setAttribute('cx',50+r*Math.cos(a+Math.PI/2)); h.setAttribute('cy',50+r*Math.sin(a+Math.PI/2)); }
 const pad = n => String(n).padStart(2,'0');
-const now = () => performance.now();
+const now = () => Date.now(); // hora real: sigue corriendo aunque el teléfono se bloquee
 function fmt(ms, withH){
   const t=Math.max(0,Math.ceil(ms/1000)); const h=Math.floor(t/3600), m=Math.floor(t%3600/60), s=t%60;
   return (h||withH)? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
@@ -792,26 +792,26 @@ function startT(){
   if(tRemain<=0) tTotal=tRemain=readInputs();
   if(tRemain<=0) return;
   if(tRemain===tTotal){ tCat=currentCat; tSub=currentSubName(); tDetail=$('tPurpose').value.trim(); }
-  tRunning=true; tEnd=now()+tRemain; tTick=setInterval(tLoop,200);
+  tRunning=true; tEnd=now()+tRemain; clearInterval(tTick); tTick=setInterval(tLoop,200); saveRun();
   $('tStart').textContent='Pausar'; $('tAdd').disabled=false; $('tEnd').disabled=false;
   $('tEditBox').classList.add('hidden'); $('tDone').classList.add('hidden');
 }
-function pauseT(){ tRunning=false; clearInterval(tTick); tRemain=tEnd-now(); $('tStart').textContent='Continuar'; renderT(); document.title='⏸ '+fmt(tRemain)+' · Temporizador'; }
+function pauseT(){ tRunning=false; clearInterval(tTick); tRemain=tEnd-now(); saveRun(); $('tStart').textContent='Continuar'; renderT(); document.title='⏸ '+fmt(tRemain)+' · Temporizador'; }
 function resetTUI(){
   clearInterval(tTick); tRunning=false; tTotal=tRemain=readInputs();
   $('tStart').textContent='Iniciar'; $('tAdd').disabled=true; $('tEnd').disabled=true;
-  $('tEditBox').classList.remove('hidden'); renderT();
+  $('tEditBox').classList.remove('hidden'); renderT(); saveRun();
 }
-function logT(dur,status,cls,extra){
-  addSession({ts:Date.now(), mode:'timer', cat:tCat||currentCat||'Sin categoría', sub:tCat?tSub:currentSubName(), label:tDetail, dur:Math.round(dur), status, cls, extra:extra||''});
+function logT(dur,status,cls,extra,ts){
+  addSession({ts:ts||Date.now(), mode:'timer', cat:tCat||currentCat||'Sin categoría', sub:tCat?tSub:currentSubName(), label:tDetail, dur:Math.round(dur), status, cls, extra:extra||''});
 }
 function finishT(){
-  logT(tTotal,'Completado','ok');
+  logT(tTotal,'Completado','ok','',tEnd);
   resetTUI(); tRemain=0; renderT();
   $('tDone').classList.remove('hidden'); beep(); document.title='✅ ¡Tiempo terminado!';
 }
 $('tStart').onclick=()=> tRunning?pauseT():startT();
-$('tAdd').onclick=()=>{ if(!tRunning) return; tEnd+=60000; tTotal+=60000; tLoop(); };
+$('tAdd').onclick=()=>{ if(!tRunning) return; tEnd+=60000; tTotal+=60000; saveRun(); tLoop(); };
 $('tEnd').onclick=()=>{
   if(tRunning) tRemain=tEnd-now();
   const used=Math.max(0,tTotal-tRemain);
@@ -849,11 +849,11 @@ function swButtons(){
 $('sStart').onclick=()=>{
   if(!sRunning){
     if(sAcc===0){ sCat=currentCat; sSub=currentSubName(); sDetail=$('sPurpose').value.trim(); }
-    sRunning=true; sStart=now(); sLoop();
+    sRunning=true; sStart=now(); cancelAnimationFrame(sRaf); sLoop();
   } else { sAcc+=now()-sStart; sRunning=false; cancelAnimationFrame(sRaf); renderS(); }
-  swButtons();
+  swButtons(); saveRun();
 };
-$('sLap').onclick=()=>{ const e=sElapsed(); laps.unshift({n:laps.length+1, split:e-lastLap, total:e}); lastLap=e; renderLaps(); };
+$('sLap').onclick=()=>{ const e=sElapsed(); laps.unshift({n:laps.length+1, split:e-lastLap, total:e}); lastLap=e; renderLaps(); saveRun(); };
 function renderLaps(){
   const sp=laps.map(l=>l.split), best=Math.min(...sp), worst=Math.max(...sp);
   $('sLaps').innerHTML = laps.length? laps.map(l=>{ const a=fmtSw(l.split), b=fmtSw(l.total);
@@ -863,7 +863,7 @@ function renderLaps(){
 }
 function resetS(){
   cancelAnimationFrame(sRaf); sRunning=false; sAcc=0; laps=[]; lastLap=0;
-  swButtons();
+  swButtons(); saveRun();
   document.title='Temporizador y cronómetro'; renderS(); renderLaps();
 }
 $('sEnd').onclick=()=>{
@@ -1018,7 +1018,40 @@ applyTheme();
 
 function tickClock(){ if(!$('clock')) return; $('clock').textContent=new Date().toLocaleString('es-CL',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); }
 tickClock(); setInterval(tickClock,15000);
+/* ===== Guardar estado para que no se pierda al bloquear o cerrar ===== */
+function saveRun(){
+  lsSet('run_v1',{
+    t:{running:tRunning, end:tEnd, remain:tRemain, total:tTotal, cat:tCat, sub:tSub, detail:tDetail},
+    s:{running:sRunning, start:sStart, acc:sAcc, laps, lastLap, cat:sCat, sub:sSub, detail:sDetail}
+  });
+}
+function restoreRun(){
+  const r=lsGet('run_v1',null); if(!r) return;
+  const t=r.t||{}, w=r.s||{};
+  // Temporizador
+  if(t.total && (t.running || (t.remain>0 && t.remain<t.total))){
+    tTotal=t.total; tCat=t.cat; tSub=t.sub||''; tDetail=t.detail||'';
+    $('tEditBox').classList.add('hidden'); $('tAdd').disabled=false; $('tEnd').disabled=false;
+    if(t.running){
+      tEnd=t.end; tRemain=tEnd-now();
+      if(tRemain<=0){ tRemain=0; finishT(); }
+      else { tRunning=true; tTick=setInterval(tLoop,200); $('tStart').textContent='Pausar'; }
+    } else { tRemain=t.remain; $('tStart').textContent='Continuar'; $('tAdd').disabled=true; }
+    renderT();
+  }
+  // Cronómetro
+  if(w.running || w.acc>0){
+    sAcc=w.acc||0; laps=w.laps||[]; lastLap=w.lastLap||0; sCat=w.cat; sSub=w.sub||''; sDetail=w.detail||'';
+    if(w.running){ sRunning=true; sStart=w.start; sLoop(); }
+    swButtons(); renderS(); renderLaps();
+  }
+}
+// Al volver a la app (después de bloquear), actualizar de inmediato
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(tRunning) tLoop(); if(sRunning) renderS(); } });
+window.addEventListener('pageshow',()=>{ if(tRunning) tLoop(); });
+
 renderT(); renderS(); renderAll();
+restoreRun();
 if(driveUrl) driveLoad(); else initDb();
 </script>
 </body>
