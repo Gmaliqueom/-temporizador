@@ -260,7 +260,7 @@
   @media (max-width:560px){
     .nav .tabs{display:none}
     .brand span{display:inline}
-    .tabbar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--barbg);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--navline);padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+    .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--barbg);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--navline);padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
     .tabbar .tab{display:flex;align-items:center;justify-content:center;height:46px;background:none;box-shadow:none;color:var(--text);padding:0;opacity:1;border-radius:12px;-webkit-tap-highlight-color:transparent;transition:transform .15s}
     .tabbar .tab:active{transform:scale(.86)}
     .tabbar .tab svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.9;overflow:visible}
@@ -305,6 +305,42 @@
   @media (prefers-color-scheme:dark){ :root:not([data-theme=light]) .lap.best .t{color:#30d158} }
   .lap .l b{font-weight:400}
   .lap.current .l b,.lap.current .t{color:var(--soft)}
+  .sync .links{display:flex;gap:16px}
+  #lockPanel{max-width:560px;margin:18px auto 0}
+  #lockPanel p{color:var(--muted);font-size:14px;margin:14px 0 0}
+  #lockPanel .controls{justify-content:flex-start;margin-top:16px}
+  .switch{display:flex;align-items:flex-start;gap:14px;cursor:pointer}
+  .switch input{position:absolute;opacity:0;pointer-events:none}
+  .switch .knob{position:relative;flex:none;width:51px;height:31px;border-radius:999px;background:var(--fill);transition:background .25s;margin-top:2px}
+  .switch .knob::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:transform .25s cubic-bezier(.3,.7,.3,1)}
+  .switch input:checked + .knob{background:#34c759}
+  .switch input:checked + .knob::after{transform:translateX(20px)}
+  .switch .lbl{font-weight:600;font-size:16px}
+  .switch .lbl small{display:block;font-weight:400;color:var(--muted);font-size:13px;margin-top:2px}
+  .sclist{list-style:none;padding:0;margin:10px 0 0}
+  .sclist li{display:flex;flex-direction:column;padding:10px 0;border-bottom:1px solid var(--row);font-size:14px}
+  .sclist li:last-child{border-bottom:0}
+  .sclist b{font-weight:600;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+  .sclist span{color:var(--muted);font-size:13px}
+  /* Gimnasio */
+  .gstate{text-align:center;font-size:24px;font-weight:600;letter-spacing:-.02em;margin:0 0 4px;min-height:32px}
+  .gstate.go{color:var(--gc);animation:pulse 1s infinite}
+  #gRing .prog{stroke:var(--gc)}
+  #gRing.set .prog{animation:breathe 2.4s ease-in-out infinite}
+  @keyframes breathe{50%{opacity:.35}}
+  #gRing.ready .time{color:var(--gc)}
+  .gdots{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;min-height:10px;margin-top:4px}
+  .gdots i{width:9px;height:9px;border-radius:50%;background:var(--fill)}
+  .gdots i.on{background:var(--gc)}
+  .gdots i.now{background:none;box-shadow:inset 0 0 0 2px var(--gc)}
+  .btn.gbig{font-size:19px;padding:16px 34px;min-width:240px}
+  .gsec{margin-top:12px}
+  .gsec .btn{min-width:96px}
+  .stepper{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:14px;padding:6px;margin:-8px 0 24px;max-width:260px}
+  .stepper button{width:44px;height:40px;border:0;border-radius:10px;background:var(--card);color:var(--text);font-size:22px;cursor:pointer;box-shadow:0 1px 3px var(--shadow)}
+  .stepper b{font-size:22px;font-weight:500;font-variant-numeric:tabular-nums}
+  .gsetrow .t small{display:block}
+  @media (max-width:820px){ #gym .c-main{order:1} #gym .c-cat{order:2;margin-bottom:0!important} #gym .c-log{order:3} }
 </style>
 </head>
 <body>
@@ -315,6 +351,7 @@
       <button class="tab active" data-tab="timer">Temporizador</button>
       <button class="tab" data-tab="sw">Cronómetro</button>
       <button class="tab" data-tab="week">Semana</button>
+      <button class="tab" data-tab="gym">Gimnasio</button>
       <button class="tab" data-tab="hist">Historial</button>
     </div>
     <button class="theme" id="themeBtn" aria-label="Cambiar tema"></button>
@@ -444,6 +481,49 @@
     </div>
   </section>
 
+  <!-- GIMNASIO -->
+  <section class="panel" id="gym">
+    <h1 class="headline">Gimnasio. <span>Tú haces la serie, Focus cuenta el descanso.</span></h1>
+    <div class="grid">
+      <div class="card c-main">
+        <div class="gstate" id="gState">Listo para entrenar</div>
+        <div class="ring" id="gRing">
+          <svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="45" fill="none" stroke-width="6"/>
+            <circle class="prog" id="gProg" cx="50" cy="50" r="45" fill="none" stroke-width="6"/></svg>
+          <div class="center">
+            <div class="time" id="gDisplay">2:00</div>
+            <div class="tag" id="gHint">Descanso de 2:00</div>
+          </div>
+        </div>
+        <div class="gdots" id="gDots"></div>
+        <div class="controls"><button class="btn primary gbig" id="gMain">Empezar serie 1</button></div>
+        <div class="controls gsec hidden" id="gAdj">
+          <button class="btn" id="gLess">−30 s</button>
+          <button class="btn" id="gMore">+30 s</button>
+        </div>
+        <button class="btn end wide hidden" id="gEnd">Terminar entrenamiento</button>
+      </div>
+      <div class="side">
+        <div class="card c-cat" style="margin-bottom:20px">
+          <label class="small">Descanso entre series</label>
+          <div class="cats" id="gRest"></div>
+          <div class="stepper"><button id="gMinus15" aria-label="Menos 15 segundos">−</button><b id="gRestVal">2:00</b><button id="gPlus15" aria-label="Más 15 segundos">+</button></div>
+          <label class="small">Qué entrenas hoy <span class="opt">(opcional)</span></label>
+          <div class="cats subs" id="gSubs"></div>
+          <div class="newcat hidden" id="gNewSub"><input maxlength="30" placeholder="Ej: Pierna"><button data-ok>Agregar</button><button class="ghost" data-cancel>✕</button></div>
+        </div>
+        <div class="card list c-log">
+          <h3>Series de hoy</h3>
+          <div id="gSets"><div class="empty">Aún no empiezas.</div></div>
+        </div>
+        <div class="card list c-log" style="margin-top:20px">
+          <h3>Entrenamientos recientes</h3>
+          <div id="gHistory"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- HISTORIAL -->
   <section class="panel" id="hist">
     <h1 class="headline">Historial. <span>Todo tu registro, siempre a mano.</span></h1>
@@ -469,7 +549,20 @@
     </div>
   </section>
 
-  <div class="sync"><span id="sync">Guardado en este navegador</span><button class="link" id="driveBtn">Google Drive ›</button></div>
+  <div class="sync"><span id="sync">Guardado en este navegador</span><span class="links"><button class="link" id="lockBtn">Pantalla bloqueada ›</button><button class="link" id="driveBtn">Google Drive ›</button></span></div>
+  <div class="card hidden" id="lockPanel">
+    <label class="switch"><input type="checkbox" id="lockOn"><span class="knob"></span><span class="lbl">Mostrar en la pantalla bloqueada<small>Usa la app Atajos del iPhone para iniciar también el reloj del sistema.</small></span></label>
+    <p>Necesitas estos 5 atajos, con estos nombres exactos:</p>
+    <ul class="sclist">
+      <li><b>Focus Timer</b><span>Iniciar temporizador (Entrada del atajo, segundos)</span></li>
+      <li><b>Focus Timer Stop</b><span>Cancelar temporizador</span></li>
+      <li><b>Focus Crono</b><span>Restablecer cronómetro + Iniciar cronómetro</span></li>
+      <li><b>Focus Crono Seguir</b><span>Iniciar cronómetro</span></li>
+      <li><b>Focus Crono Stop</b><span>Detener cronómetro</span></li>
+    </ul>
+    <div class="controls"><button class="btn" id="lockTest">Probar con 10 segundos</button></div>
+    <p id="lockMsg">Después de cada acción, el iPhone abre Atajos un momento. Vuelve a Focus deslizando o tocando «‹ Focus» arriba a la izquierda.</p>
+  </div>
   <div class="card hidden" id="drivePanel">
     <label class="small" for="driveUrl">URL de tu aplicación web de Google</label>
     <input class="purpose" id="driveUrl" placeholder="https://script.google.com/macros/s/.../exec">
@@ -496,13 +589,14 @@
   <button class="tab active" data-tab="timer" aria-label="Temporizador"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle class="b" cx="12" cy="13.5" r="8"/><path class="d" d="M12 9.5v4l2.6 2.2"/><path class="k" d="M9.5 2.5h5"/></svg></button>
   <button class="tab" data-tab="sw" aria-label="Cronómetro"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle class="b" cx="12" cy="14" r="7.6"/><path class="d" d="M12 14V10.2"/><path class="k" d="M12 6.4V3M10 3h4M18.3 7.7l1.6-1.6"/></svg></button>
   <button class="tab" data-tab="week" aria-label="Semana"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect class="b" x="3" y="3" width="18" height="18" rx="5"/><path class="d" d="M8 16.5v-3M12 16.5v-8M16 16.5v-5"/></svg></button>
+  <button class="tab" data-tab="gym" aria-label="Gimnasio"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect class="b" x="5.2" y="6" width="3.6" height="12" rx="1.2"/><rect class="b" x="15.2" y="6" width="3.6" height="12" rx="1.2"/><path class="k" d="M8.8 12h6.4M2.8 9.5v5M21.2 9.5v5"/></svg></button>
   <button class="tab" data-tab="hist" aria-label="Historial"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path class="k" d="M3.6 12.6A8.5 8.5 0 1 0 6.2 5.9L3.6 8.4"/><path class="k" d="M3.6 3.9v4.5h4.5"/><path class="d" d="M12 8v4.5l3 1.8"/></svg></button>
 </nav>
 
 <script>
 const $ = id => document.getElementById(id);
 function circ(id){ return 2*Math.PI*(+$(id).getAttribute('r')); }
-['tProg','sProg'].forEach(id=>{ $(id).style.strokeDasharray=circ(id); });
+['tProg','sProg','gProg'].forEach(id=>{ $(id).style.strokeDasharray=circ(id); });
 function setProg(id,f){ $(id).style.strokeDashoffset = circ(id)*(1-Math.max(0,Math.min(1,f))); }
 (function buildTicks(){
   const g=$('sTicks'); if(!g) return; let h='';
@@ -599,7 +693,7 @@ async function driveLoad(){
   }catch(e){ setSync('No se pudo conectar con Google Drive; guardando en este navegador'); return false; }
   finally{ driveBusy=false; }
 }
-$('driveBtn').onclick=()=>{ $('drivePanel').classList.toggle('hidden'); $('driveUrl').value=driveUrl; };
+$('driveBtn').onclick=()=>{ $('lockPanel').classList.add('hidden'); $('drivePanel').classList.toggle('hidden'); $('driveUrl').value=driveUrl; };
 $('driveConnect').onclick=async()=>{
   const u=$('driveUrl').value.trim();
   if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){ $('driveMsg').textContent='Esa URL no parece de Apps Script. Debe empezar con https://script.google.com/macros/s/ y terminar en /exec'; return; }
@@ -748,6 +842,7 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t));
   if(t==='week') renderWeek();
   if(t==='hist') renderHistory();
+  if(t==='gym') renderG();
   window.scrollTo({top:0,behavior:'smooth'});
 });
 
@@ -793,10 +888,11 @@ function startT(){
   if(tRemain<=0) return;
   if(tRemain===tTotal){ tCat=currentCat; tSub=currentSubName(); tDetail=$('tPurpose').value.trim(); }
   tRunning=true; tEnd=now()+tRemain; clearInterval(tTick); tTick=setInterval(tLoop,200); saveRun();
+  lockSC('Focus Timer', Math.max(1,Math.round(tRemain/1000)));
   $('tStart').textContent='Pausar'; $('tAdd').disabled=false; $('tEnd').disabled=false;
   $('tEditBox').classList.add('hidden'); $('tDone').classList.add('hidden');
 }
-function pauseT(){ tRunning=false; clearInterval(tTick); tRemain=tEnd-now(); saveRun(); $('tStart').textContent='Continuar'; renderT(); document.title='⏸ '+fmt(tRemain)+' · Temporizador'; }
+function pauseT(){ tRunning=false; clearInterval(tTick); tRemain=tEnd-now(); saveRun(); lockSC('Focus Timer Stop'); $('tStart').textContent='Continuar'; renderT(); document.title='⏸ '+fmt(tRemain)+' · Temporizador'; }
 function resetTUI(){
   clearInterval(tTick); tRunning=false; tTotal=tRemain=readInputs();
   $('tStart').textContent='Iniciar'; $('tAdd').disabled=true; $('tEnd').disabled=true;
@@ -813,12 +909,12 @@ function finishT(){
 $('tStart').onclick=()=> tRunning?pauseT():startT();
 $('tAdd').onclick=()=>{ if(!tRunning) return; tEnd+=60000; tTotal+=60000; saveRun(); tLoop(); };
 $('tEnd').onclick=()=>{
-  if(tRunning) tRemain=tEnd-now();
+  if(tRunning){ tRemain=tEnd-now(); lockSC('Focus Timer Stop'); }
   const used=Math.max(0,tTotal-tRemain);
   if(used>=1000) logT(used,'Terminado antes','cut','de '+fmt(tTotal,tTotal>=3600000));
   resetTUI(); $('tDone').classList.add('hidden'); document.title='Temporizador y cronómetro';
 };
-$('tReset').onclick=()=>{ resetTUI(); $('tDone').classList.add('hidden'); document.title='Temporizador y cronómetro'; };
+$('tReset').onclick=()=>{ if(tRunning) lockSC('Focus Timer Stop'); resetTUI(); $('tDone').classList.add('hidden'); document.title='Temporizador y cronómetro'; };
 
 /* ================= Cronómetro ================= */
 let sStart=null, sAcc=0, sRunning=false, sRaf=null, laps=[], lastLap=0, sCat=null, sSub='', sDetail='';
@@ -848,9 +944,10 @@ function swButtons(){
 }
 $('sStart').onclick=()=>{
   if(!sRunning){
+    lockSC(sAcc===0 ? 'Focus Crono' : 'Focus Crono Seguir');
     if(sAcc===0){ sCat=currentCat; sSub=currentSubName(); sDetail=$('sPurpose').value.trim(); }
     sRunning=true; sStart=now(); cancelAnimationFrame(sRaf); sLoop();
-  } else { sAcc+=now()-sStart; sRunning=false; cancelAnimationFrame(sRaf); renderS(); }
+  } else { sAcc+=now()-sStart; sRunning=false; cancelAnimationFrame(sRaf); renderS(); lockSC('Focus Crono Stop'); }
   swButtons(); saveRun();
 };
 $('sLap').onclick=()=>{ const e=sElapsed(); laps.unshift({n:laps.length+1, split:e-lastLap, total:e}); lastLap=e; renderLaps(); saveRun(); };
@@ -867,7 +964,7 @@ function resetS(){
   document.title='Temporizador y cronómetro'; renderS(); renderLaps();
 }
 $('sEnd').onclick=()=>{
-  const e=sElapsed();
+  const e=sElapsed(); if(sRunning) lockSC('Focus Crono Stop');
   if(e>=1000) addSession({ts:Date.now(), mode:'sw', cat:sCat||currentCat||'Sin categoría', sub:sCat?sSub:currentSubName(), label:sDetail, dur:Math.round(e), status:'Terminado', cls:'ok', extra: laps.length? laps.length+' vueltas':''});
   resetS();
 };
@@ -989,12 +1086,13 @@ $('hCat').addEventListener('change',()=>{ hLimit=40; renderHistFilters(); render
 $('hQ').addEventListener('input',()=>{ hLimit=40; renderHistory(); });
 $('hMore').onclick=()=>{ hLimit+=40; renderHistory(); };
 
-function renderAll(){ normCats(); renderCats(); renderHist(); renderWeek(); renderHistory(); }
+function renderAll(){ normCats(); renderCats(); renderHist(); renderWeek(); renderHistory(); if(typeof renderG==='function' && window.__gReady) renderG(); }
 
 /* Atajo: barra espaciadora inicia/pausa */
 document.addEventListener('keydown',e=>{
   if(e.code!=='Space' || e.target.tagName==='INPUT') return;
   const p=document.querySelector('.panel.active'); if(p.id==='week'||p.id==='hist') return;
+  if(p.id==='gym'){ e.preventDefault(); $('gMain').click(); return; }
   e.preventDefault(); (p.id==='timer'? $('tStart') : $('sStart')).click();
 });
 
@@ -1018,6 +1116,19 @@ applyTheme();
 
 function tickClock(){ if(!$('clock')) return; $('clock').textContent=new Date().toLocaleString('es-CL',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); }
 tickClock(); setInterval(tickClock,15000);
+/* ===== Pantalla bloqueada (Atajos del iPhone) ===== */
+let lockOn = lsGet('lock_sc', false);
+function lockSC(name, input){
+  if(!lockOn) return;
+  let u='shortcuts://run-shortcut?name='+encodeURIComponent(name);
+  if(input!==undefined) u+='&input=text&text='+encodeURIComponent(String(input));
+  setTimeout(()=>{ try{ window.location.href=u; }catch(e){} }, 60);
+}
+$('lockOn').checked = lockOn;
+$('lockOn').addEventListener('change',()=>{ lockOn=$('lockOn').checked; lsSet('lock_sc',lockOn); });
+$('lockBtn').onclick=()=>{ $('lockPanel').classList.toggle('hidden'); $('drivePanel').classList.add('hidden'); };
+$('lockTest').onclick=()=>{ const was=lockOn; lockOn=true; lockSC('Focus Timer',10); lockOn=was; };
+
 /* ===== Guardar estado para que no se pierda al bloquear o cerrar ===== */
 function saveRun(){
   lsSet('run_v1',{
@@ -1050,8 +1161,131 @@ function restoreRun(){
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(tRunning) tLoop(); if(sRunning) renderS(); } });
 window.addEventListener('pageshow',()=>{ if(tRunning) tLoop(); });
 
+/* ================= Gimnasio ================= */
+const G_PRESETS=[90000,120000,150000,180000];
+let gRest = lsGet('gym_rest',120000);
+let g = lsGet('gym_v1',null) || {state:'idle'};
+let gTick=null, gWake=null, gLastBeep=0;
+function gymCat(){ const c=cats.find(c=>/gimnasio|gym/i.test(c.name)); return c? c.name : (currentCat||'Gimnasio'); }
+function gSave(){ lsSet('gym_v1',g); }
+function mmss(ms){ const t=Math.max(0,Math.round(ms/1000)); return `${Math.floor(t/60)}:${pad(t%60)}`; }
+function gSubName(){ const v=lsGet('gym_sub',''); return subsOf(gymCat()).includes(v)? v : ''; }
+async function gWakeOn(){ try{ if(navigator.wakeLock && !gWake){ gWake=await navigator.wakeLock.request('screen'); gWake.addEventListener('release',()=>{ gWake=null; }); } }catch(e){} }
+function gWakeOff(){ try{ if(gWake) gWake.release(); }catch(e){} gWake=null; }
+function gStartTick(){ clearInterval(gTick); gTick=setInterval(gLoop,250); }
+function gLoop(){
+  if(g.state==='rest' && now()>=g.restEnd){
+    g.state='ready'; g.readyAt=g.restEnd; gSave();
+    if(document.visibilityState==='visible' && now()-g.restEnd<5000){ beep(); try{ navigator.vibrate && navigator.vibrate([300,150,300]); }catch(e){} }
+  }
+  renderG();
+}
+function renderG(){
+  if(!$('gMain')) return;
+  const col=catColor(gymCat());
+  $('gym').style.setProperty('--gc',col);
+  const ring=$('gRing'); ring.classList.remove('set','ready','rest');
+  const n=(g.sets||[]).length;
+  const S=$('gState'); S.classList.remove('go');
+  $('gAdj').classList.toggle('hidden', g.state!=='rest');
+  $('gEnd').classList.toggle('hidden', g.state==='idle');
+  if(g.state==='idle'){
+    S.textContent='Listo para entrenar';
+    $('gDisplay').textContent=mmss(gRest); $('gHint').textContent='Descanso de '+mmss(gRest);
+    setProg('gProg',1); $('gMain').textContent='Empezar serie 1';
+  } else if(g.state==='set'){
+    ring.classList.add('set');
+    S.textContent='Serie '+(n+1);
+    $('gDisplay').textContent=mmss(now()-g.setStart); $('gHint').textContent='Te espero, sin apuro';
+    setProg('gProg',1); $('gMain').textContent='Terminé la serie';
+  } else if(g.state==='rest'){
+    ring.classList.add('rest');
+    const left=g.restEnd-now();
+    S.textContent='Descanso';
+    $('gDisplay').textContent=mmss(left); $('gHint').textContent='Siguiente: serie '+(n+1);
+    setProg('gProg', left/g.restDur); $('gMain').textContent='Empezar serie '+(n+1);
+  } else if(g.state==='ready'){
+    ring.classList.add('ready');
+    S.textContent='¡A la serie!'; S.classList.add('go');
+    $('gDisplay').textContent='0:00'; $('gHint').textContent='Descanso terminado hace '+mmss(now()-g.readyAt);
+    setProg('gProg',0); $('gMain').textContent='Empezar serie '+(n+1);
+  }
+  // puntos de series
+  const dots=[]; for(let i=0;i<n;i++) dots.push('<i class="on"></i>');
+  if(g.state!=='idle') dots.push(g.state==='set'?'<i class="now"></i>':'<i></i>');
+  $('gDots').innerHTML=dots.join('');
+  // descanso elegido
+  $('gRest').innerHTML=G_PRESETS.map(v=>`<button class="cat ${v===gRest?'sel':''}" data-grest="${v}">${mmss(v)}</button>`).join('');
+  $('gRestVal').textContent=mmss(gRest);
+  // qué entrenas (subcategorías de Gimnasio)
+  const cs=gSubName();
+  $('gSubs').innerHTML=subsOf(gymCat()).map(x=>`<button class="cat sub ${x===cs?'sel':''}" data-gsub="${esc(x)}" style="${x===cs?'background:'+col:''}">${esc(x)}</button>`).join('')+'<button class="cat add" data-gaddsub>+ Agregar</button>';
+  // series de hoy
+  const sets=g.sets||[];
+  $('gSets').innerHTML = sets.length ? sets.map((x,i)=>`<div class="row gsetrow"><span class="l"><b>Serie ${i+1}</b></span><span class="t">${mmss(x.dur)}${x.rest?`<small>descanso ${mmss(x.rest)}</small>`:''}</span></div>`).reverse().join('')
+    : '<div class="empty">'+(g.state==='idle'?'Aún no empiezas.':'Haciendo la primera serie…')+'</div>';
+  const gl=sessions.filter(x=>x.mode==='gym').slice(0,6);
+  $('gHistory').innerHTML = gl.length? gl.map(rowHtml).join('') : '<div class="empty">Aún no hay entrenamientos.</div>';
+  if(g.state!=='idle') document.title = g.state==='rest' ? `⏳ ${mmss(g.restEnd-now())} · Descanso` : g.state==='set' ? `💪 Serie ${n+1}` : '¡A la serie!';
+}
+function gStartSet(){
+  const t=now();
+  if(g.state==='idle'){ g={state:'set', start:t, sets:[], sub:gSubName()}; gWakeOn(); }
+  else {
+    if(g.state==='rest') lockSC('Focus Timer Stop');
+    const last=g.sets[g.sets.length-1]; if(last && g.restStart) last.rest=t-g.restStart;
+    g.state='set';
+  }
+  g.setStart=t; gSave(); gStartTick(); renderG();
+}
+function gFinishSet(){
+  const t=now();
+  g.sets.push({dur:t-g.setStart});
+  g.state='rest'; g.restStart=t; g.restDur=gRest; g.restEnd=t+gRest;
+  gSave(); gStartTick(); renderG();
+  lockSC('Focus Timer', Math.round(gRest/1000));
+}
+$('gMain').onclick=()=>{ unlockAudio(); if(g.state==='set') gFinishSet(); else gStartSet(); };
+function gAdjust(d){ if(g.state!=='rest') return; g.restEnd=Math.max(now()+1000,g.restEnd+d); g.restDur=Math.max(g.restDur+d, g.restEnd-now()); gSave(); renderG(); }
+$('gMore').onclick=()=>gAdjust(30000);
+$('gLess').onclick=()=>gAdjust(-30000);
+$('gEnd').onclick=()=>{
+  const t=now();
+  if(g.state==='rest') lockSC('Focus Timer Stop');
+  if(g.state==='set') g.sets.push({dur:t-g.setStart});
+  const dur=t-(g.start||t), n=(g.sets||[]).length;
+  if(dur>=1000 && n>0) addSession({ts:t, mode:'gym', cat:gymCat(), sub:g.sub||gSubName(), label:'', dur:Math.round(dur), status:'Completado', cls:'ok', extra:n+(n===1?' serie':' series')});
+  g={state:'idle'}; gSave(); clearInterval(gTick); gWakeOff(); document.title='Temporizador y cronómetro'; renderG();
+};
+function setRest(v){ gRest=Math.min(600000,Math.max(15000,v)); lsSet('gym_rest',gRest); renderG(); }
+$('gMinus15').onclick=()=>setRest(gRest-15000);
+$('gPlus15').onclick=()=>setRest(gRest+15000);
+$('gym').addEventListener('click',e=>{
+  const r=e.target.closest('[data-grest]'); if(r) return setRest(+r.dataset.grest);
+  const sb=e.target.closest('[data-gsub]');
+  if(sb){ const v=sb.dataset.gsub; lsSet('gym_sub', gSubName()===v?'':v); if(g.state!=='idle'){ g.sub=gSubName(); gSave(); } renderG(); return; }
+  if(e.target.closest('[data-gaddsub]')){ $('gNewSub').classList.remove('hidden'); $('gNewSub').querySelector('input').focus(); }
+});
+(function(){
+  const nc=$('gNewSub'), inp=nc.querySelector('input');
+  const add=()=>{ const v=clean(inp.value); if(!v) return;
+    let c=catObj(gymCat());
+    if(!c){ c={name:'Gimnasio',color:'#34c759',subs:[]}; cats.push(c); }
+    if(!c.subs.some(x=>x.toLowerCase()===v.toLowerCase())) c.subs.push(v);
+    lsSet('gym_sub', c.subs.find(x=>x.toLowerCase()===v.toLowerCase()));
+    if(g.state!=='idle'){ g.sub=gSubName(); gSave(); }
+    inp.value=''; nc.classList.add('hidden'); saveCats(); renderG(); };
+  nc.querySelector('[data-ok]').onclick=add;
+  nc.querySelector('[data-cancel]').onclick=()=>{ inp.value=''; nc.classList.add('hidden'); };
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') add(); if(e.key==='Escape') nc.querySelector('[data-cancel]').click(); });
+})();
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && g.state!=='idle'){ gWakeOn(); gLoop(); } });
+window.__gReady=true;
+function restoreGym(){ if(g.state && g.state!=='idle'){ gLoop(); gStartTick(); } else renderG(); }
+
 renderT(); renderS(); renderAll();
 restoreRun();
+restoreGym();
 if(driveUrl) driveLoad(); else initDb();
 </script>
 </body>
